@@ -1,0 +1,852 @@
+/* Halden 设计系统：校园 AI 主题（CampusAI）
+   视觉基准为 campus-ai-landing.html，落地页与所有路由共享同一套样式。
+
+   目录
+   1. 设计令牌与 reset
+   2. 环境层（碗状光效画布）
+   3. 导航胶囊
+   4. 按钮（圆点 → 箭头）
+   5. 英雄区（Hero）
+   6. 宣言区（滚动逐字揭示）
+   7. 暗色分栏
+   8. 登录模态框
+   9. 模块占位页
+   10. 响应式（≤820px） */
+
+/* ---------- 1. 设计令牌与 reset ---------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --ink: #0b1d3a;
+  --ink-2: #1d2f4f;
+  --accent: #5b7cf0;
+  --dot: #2fe0d0;
+  --panel: #0e1f3d;
+  --panel-line: rgba(255, 255, 255, 0.12);
+  --gut: clamp(20px, 5.7vw, 82px);
+  --ease: cubic-bezier(0.22, 0.7, 0.2, 1);
+  --line: rgba(11, 29, 58, 0.1);
+}
+
+html,
+body {
+  background: #fff;
+}
+
+body {
+  font-family: 'Inter Tight', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  color: var(--ink);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ---------- 2. 环境层 ---------- */
+.atmo {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: #fff;
+}
+
+.atmo canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.app__main {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- 3. 导航胶囊 ---------- */
+.nav {
+  position: fixed;
+  z-index: 50;
+  top: 20px;
+  left: var(--gut);
+  right: var(--gut);
+  height: 60px;
+  border-radius: 999px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 10px 0 22px;
+  box-shadow: 0 1px 0 rgba(11, 29, 58, 0.04), 0 10px 30px -18px rgba(11, 29, 58, 0.25);
+  opacity: 0;
+  transform: translateY(-8px);
+  animation: navin 0.9s var(--ease) 0.15s forwards;
+}
+
+@keyframes navin {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.brand svg {
+  width: 22px;
+  height: 22px;
+}
+
+.links {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 31px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  opacity: 0.92;
+}
+
+.links a {
+  transition: opacity 0.2s;
+}
+
+.links a:hover {
+  opacity: 0.55;
+}
+
+.links a.router-link-active {
+  opacity: 1;
+}
+
+.right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.right .login {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 14px;
+  transition: padding 0.35s var(--ease);
+  background: none;
+  border: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.right .who {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 10px;
+  color: var(--ink-2);
+}
+
+.navcta {
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  border-radius: 999px;
+  margin-left: -42px;
+  transform: scale(0);
+  transform-origin: 100% 50%;
+  transition: transform 0.35s var(--ease), width 0.65s var(--ease) 0.22s, margin 0.35s var(--ease);
+}
+
+.navcta .btn {
+  width: 142px;
+}
+
+.navcta .lbl {
+  opacity: 0;
+  transition: opacity 0.4s 0.45s;
+}
+
+.nav.on .navcta {
+  width: 142px;
+  margin-left: 16px;
+  transform: scale(1);
+}
+
+.nav.on .navcta .lbl {
+  opacity: 1;
+}
+
+.nav.on .login {
+  padding-right: 0;
+}
+
+/* ---------- 4. 按钮 ---------- */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 46px 0 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn:hover {
+  background: #13294f;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn .dot {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--dot);
+  box-shadow: 0 0 10px rgba(47, 224, 208, 0.7);
+  transition: width 0.45s var(--ease), height 0.45s var(--ease), right 0.45s var(--ease),
+    box-shadow 0.45s var(--ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn .dot svg {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.3s 0.05s, transform 0.3s 0.05s;
+}
+
+.btn:hover .dot {
+  width: 32px;
+  height: 32px;
+  right: 5px;
+  box-shadow: none;
+}
+
+.btn:hover .dot svg {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.btn.lg {
+  height: 62px;
+  padding: 0 62px 0 28px;
+  font-size: 17px;
+}
+
+.btn.lg .dot {
+  width: 14px;
+  height: 14px;
+  right: 24px;
+}
+
+.btn.lg .dot svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn.lg:hover .dot {
+  width: 48px;
+  height: 48px;
+  right: 7px;
+}
+
+/* ---------- 5. 英雄区 ---------- */
+.hero {
+  position: relative;
+  height: 100vh;
+  min-height: 640px;
+}
+
+.hero h1 {
+  position: absolute;
+  top: 21.5vh;
+  left: var(--gut);
+  font-weight: 400;
+  font-size: clamp(34px, 4.65vw, 70px);
+  line-height: 1.03;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}
+
+.hero h1 .hl {
+  color: var(--accent);
+}
+
+.hero .trust {
+  position: absolute;
+  top: 58vh;
+  left: var(--gut);
+  font-size: clamp(15px, 1.28vw, 19px);
+  letter-spacing: -0.015em;
+  color: var(--ink-2);
+}
+
+.hero .cta {
+  position: absolute;
+  bottom: 7.5vh;
+  left: var(--gut);
+}
+
+.hero .logos {
+  position: absolute;
+  right: 0;
+  width: 50%;
+  top: 55vh;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.hero .logos .cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3e4d68;
+  position: relative;
+}
+
+.hero .logos .cell::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(rgba(11, 29, 58, 0.08), rgba(11, 29, 58, 0.05));
+}
+
+.hero .logos .cell:nth-child(n + 5)::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: rgba(11, 29, 58, 0.06);
+}
+
+.hero .logos .mark {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.hero .logos .mark svg {
+  height: 20px;
+}
+
+.hero .logos .mark.tidel {
+  border: 2px solid #3e4d68;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.hero .logos .mark.nord {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.hero .logos .mark.kelp {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+}
+
+.hero .logos .mark.port {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+}
+
+.hero .logos .mark.sea {
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.fade-up {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+body.ready .fade-up {
+  animation: fu 0.9s var(--ease) forwards;
+}
+
+@keyframes fu {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- 6. 宣言区 ---------- */
+.statement {
+  position: relative;
+  height: 306vh;
+  margin-top: -31vh;
+  pointer-events: none;
+}
+
+.pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+#stmt {
+  position: absolute;
+  top: 41.5vh;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-weight: 400;
+  font-size: clamp(20px, 2.8vw, 42px);
+  line-height: 1.16;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  white-space: nowrap;
+  will-change: transform;
+}
+
+/* ---------- 7. 暗色分栏 ---------- */
+split,
+.split {
+  position: relative;
+  z-index: 2;
+  background: var(--panel);
+  color: #fff;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 58.3% 41.7%;
+}
+
+.split .l {
+  position: relative;
+  padding-left: var(--gut);
+}
+
+.split .l::before {
+  content: '';
+  position: absolute;
+  left: var(--gut);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--panel-line);
+}
+
+.split h2 {
+  font-weight: 400;
+  font-size: clamp(32px, 3.15vw, 48px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  padding: 21vh 0 0 6.2vw;
+}
+
+.split #row {
+  margin-top: 6.4vh;
+  border-top: 1px solid var(--panel-line);
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: 24px;
+  padding: 3vh 6vw 0 6.2vw;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+}
+
+.split #row.on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.split #row h3 {
+  font-weight: 400;
+  font-size: clamp(17px, 1.4vw, 21px);
+}
+
+.split #row p {
+  font-size: clamp(13px, 1.1vw, 16px);
+  line-height: 1.38;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 20em;
+}
+
+.split #row p strong {
+  color: #fff;
+  font-weight: 500;
+}
+
+.split .r {
+  position: relative;
+  overflow: hidden;
+}
+
+.split .r img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 60%;
+  transform-origin: 50% 60%;
+}
+
+/* ---------- 8. 登录模态框 ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 29, 58, 0.28);
+  backdrop-filter: blur(6px);
+}
+
+.modal__card {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 30px 80px -30px rgba(11, 29, 58, 0.45);
+  padding: 28px 26px 24px;
+  animation: modalin 0.45s var(--ease) both;
+}
+
+@keyframes modalin {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal__title {
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.modal__subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-2);
+  opacity: 0.7;
+}
+
+.modal__tabs {
+  display: flex;
+  gap: 18px;
+  margin: 20px 0 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal__tab {
+  background: none;
+  border: none;
+  padding: 0 0 9px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink-2);
+  opacity: 0.55;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.modal__tab.is-active {
+  opacity: 1;
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.modal__field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.modal__label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  opacity: 0.65;
+  margin-bottom: 6px;
+}
+
+.modal__input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--ink);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.modal__input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(91, 124, 240, 0.15);
+}
+
+.modal__error {
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(185, 28, 28, 0.07);
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.modal__hint {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  opacity: 0.6;
+  text-align: center;
+}
+
+.modal__close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink-2);
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.modal__close:hover {
+  opacity: 1;
+}
+
+/* ---------- 9. 模块占位页 ---------- */
+.module-page {
+  padding: 22vh var(--gut) 10vh;
+  min-height: 100vh;
+}
+
+.module-page__eyebrow {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.module-page__title {
+  margin-top: 10px;
+  font-weight: 400;
+  font-size: clamp(30px, 4vw, 56px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.module-page__desc {
+  margin-top: 16px;
+  max-width: 34em;
+  font-size: clamp(14px, 1.15vw, 17px);
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.module-page__status {
+  margin-top: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.module-page__status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--dot);
+  box-shadow: 0 0 10px rgba(47, 224, 208, 0.7);
+}
+
+.module-page__grid {
+  margin-top: 48px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.module-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 1px 0 rgba(11, 29, 58, 0.04), 0 18px 40px -30px rgba(11, 29, 58, 0.35);
+}
+
+.module-card__title {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.module-card__desc {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  opacity: 0.72;
+}
+
+.module-card__tag {
+  margin-top: 14px;
+  display: inline-block;
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.module-notice {
+  margin-top: 48px;
+  border-left: 2px solid var(--accent);
+  padding: 4px 0 4px 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  max-width: 42em;
+}
+
+/* ---------- 10. 响应式 ---------- */
+@media (max-width: 820px) {
+  .nav {
+    height: 54px;
+    top: 12px;
+  }
+
+  .nav .links {
+    display: none;
+  }
+
+  .nav .login {
+    padding: 0 6px;
+  }
+
+  .nav.on .navcta {
+    margin-left: 8px;
+  }
+
+  .hero h1 {
+    top: 17vh;
+    font-size: 7.4vw;
+    white-space: normal;
+  }
+
+  .hero .trust {
+    top: 44vh;
+  }
+
+  .hero .logos {
+    top: 50vh;
+    bottom: 18vh;
+    width: 100%;
+  }
+
+  .hero .logos .mark span {
+    display: none;
+  }
+
+  .hero .logos .mark {
+    font-size: 11px;
+  }
+
+  .hero .cta {
+    bottom: 6vh;
+  }
+
+  #stmt {
+    font-size: 23px;
+    max-width: 15em;
+    margin: 0 auto;
+    white-space: normal;
+  }
+
+  #stmt br {
+    display: none;
+  }
+
+  .split {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 70vh;
+  }
+
+  .split h2 {
+    padding: 16vh 0 0 6vw;
+  }
+
+  .split #row {
+    grid-template-columns: 1fr;
+    padding: 3vh 6vw 6vh;
+  }
+
+  .module-page {
+    padding: 16vh var(--gut) 8vh;
+  }
+}

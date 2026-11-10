@@ -30,9 +30,9 @@ campus-ai-tools/
 │   │   ├── schemas/              # Pydantic 请求/响应模型
 │   │   └── storage/              # SQLite 连接与迁移
 │   └── tests/
-├── web/                          # Vue 3 前端
+├── web/                          # Vue 3 前端（Halden 风格统一视觉）
 │   ├── package.json
-│   └── src/{api,views,components,router,stores,styles,utils}
+│   └── src/{api,components,halden,router,state,stores,styles,utils,views}
 ├── data/                         # 运行期数据（git 忽略）
 ├── docs/
 │   ├── api.md                    # API 契约
@@ -89,6 +89,7 @@ curl http://127.0.0.1:8000/healthz   # 后端探针
 
 ## 当前进度
 
-- 已完成：项目骨架、账户体系（注册/登录/JWT）、SQLite 初始化与 schema 迁移、`/healthz`、Vue 3 前端骨架（路由/布局/登录注册页/API 客户端）、Docker Compose 部署配置。
+- 已完成：项目骨架、账户体系（注册/登录/JWT）、SQLite 初始化与 schema 迁移、`/healthz`、Vue 3 前端（Halden 碗状光效落地页 + 同一套视觉的模块页 + 登录模态框）、Docker Compose 部署配置。
+- 前端交互：登录与注册统一为模态框，不再跳转独立页面；未登录访问功能模块会弹出登录框。
 - 后续批次：文档解析、校园问答 RAG、学习助手、统一搜索、知识库管理与语料导入。
 - 校园问答命中的 E3 语料按已确认口径处理：置顶固定免责声明、返回 `verified: false`、搜索结果不展示 E3 条目。
