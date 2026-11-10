@@ -6,12 +6,7 @@
 
 from __future__ import annotations
 
-import sqlite3
-
 from fastapi.testclient import TestClient
-
-from app.services.auth_service import hash_password
-from app.storage.db import utc_now_iso
 
 API = "/api/v1"
 
@@ -70,17 +65,7 @@ def test_kb_items_forbidden_for_student(client: TestClient, auth_headers: dict[s
 
 
 def test_kb_items_for_admin_returns_not_implemented(
-    client: TestClient, db_conn: sqlite3.Connection
+    client: TestClient, admin_headers: dict[str, str]
 ) -> None:
-    now = utc_now_iso()
-    db_conn.execute(
-        "INSERT INTO users (identity, password_hash, role, created_at, updated_at) "
-        "VALUES (?, ?, ?, ?, ?)",
-        ("admin", hash_password("admin2024"), "admin", now, now),
-    )
-    db_conn.commit()
-    login = client.post(f"{API}/auth/login", json={"identity": "admin", "password": "admin2024"})
-    assert login.status_code == 200
-    headers = {"Authorization": f"Bearer {login.json()['token']}"}
-    response = client.get(f"{API}/kb/items", headers=headers)
+    response = client.get(f"{API}/kb/items", headers=admin_headers)
     assert response.status_code == 501

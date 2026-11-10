@@ -14,7 +14,15 @@ ALLOWED_MIME_TYPES = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 )
+ALLOWED_SUFFIXES = (".pdf", ".docx", ".pptx")
 MAX_UPLOAD_BYTES = 30 * 1024 * 1024
+
+
+def format_size(limit: int) -> str:
+    """把字节上限格式化为用户可读文案。"""
+    if limit >= 1024 * 1024:
+        return f"{limit // (1024 * 1024)}MB"
+    return f"{limit}B"
 
 
 def list_documents(conn: sqlite3.Connection, user_id: int) -> list[dict]:

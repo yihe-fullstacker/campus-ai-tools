@@ -36,7 +36,7 @@ def create_session(
 ) -> dict:
     """新建一个助手会话。"""
     try:
-        return chat_service.list_chat_sessions(conn, user["id"])
+        return chat_service.create_chat_session(conn, user["id"], title)
     except ServiceNotImplemented as exc:
         raise module_not_implemented(exc) from exc
 

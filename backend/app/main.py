@@ -4,6 +4,7 @@
 - 业务接口统一挂载在 ``/api/v1`` 前缀下；``/healthz`` 同时在根路径与前缀下暴露，便于探针使用。
 - 错误统一体为 ``{"code": "<机器码>", "message": "<面向用户的中文提示>"}``。
 - 首次启动自动创建数据目录并执行 SQLite schema 迁移。
+- 生产环境使用兜底 JWT 密钥时直接拒绝启动，不静默降级。
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api import auth, chat, documents, health, kb, qa, search
 from app.config import get_settings
 from app.errors import ApiError
+from app.services import doc_service
 from app.storage.db import connect, migrate
 
 logger = logging.getLogger(__name__)
@@ -35,12 +37,15 @@ DEFAULT_STATUS_MESSAGES = {
     429: "请求过于频繁，请稍后重试。",
 }
 STARLETTE_DEFAULT_DETAILS = {"Not Found", "Method Not Allowed"}
+# multipart 头部与边界的额外开销，用于 Content-Length 的宽松估算
+UPLOAD_OVERHEAD_BYTES = 1024 * 1024
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """启动时准备数据目录并执行数据库迁移。"""
     settings = get_settings()
+    settings.validate_runtime()
     settings.ensure_dirs()
     conn = connect()
     try:
@@ -63,10 +68,13 @@ def _register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
-        logger.debug("请求参数校验失败：%s", exc.errors())
+        errors = exc.errors()
+        logger.debug("请求参数校验失败：%s", errors)
+        message = "请求参数不合法，请检查后重试。"
+        if errors and errors[0].get("type") == "value_error":
+            message = str(errors[0].get("msg", "")).replace("Value error, ", "") or message
         return JSONResponse(
-            status_code=400,
-            content={"code": "REQUEST_INVALID", "message": "请求参数不合法，请检查后重试。"},
+            status_code=400, content={"code": "REQUEST_INVALID", "message": message}
         )
 
     @app.exception_handler(StarletteHTTPException)
@@ -109,6 +117,32 @@ def create_app() -> FastAPI:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+    @app.middleware("http")
+    async def reject_oversized_upload(request: Request, call_next):
+        """在请求体解析前拦截超大上传。
+
+        Starlette 会先把整个 multipart 请求体解析成 UploadFile；这里提前按 Content-Length
+        拦截，避免超大文件进入解析阶段（占用内存与临时磁盘）。
+        """
+        if request.method == "POST" and request.url.path.rstrip("/").endswith("/documents"):
+            declared = request.headers.get("content-length")
+            if declared:
+                try:
+                    size = int(declared)
+                except ValueError:
+                    size = 0
+                limit = doc_service.MAX_UPLOAD_BYTES + UPLOAD_OVERHEAD_BYTES
+                if size > limit:
+                    limit_label = doc_service.format_size(doc_service.MAX_UPLOAD_BYTES)
+                    return JSONResponse(
+                        status_code=413,
+                        content={
+                            "code": "DOCUMENT_TOO_LARGE",
+                            "message": f"上传内容超过 {limit_label} 上限，请压缩后重试。",
+                        },
+                    )
+        return await call_next(request)
 
     prefix = settings.api_prefix
     app.include_router(health.router)

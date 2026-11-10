@@ -13,6 +13,9 @@
   413 请求体过大、429 限流、500 服务端异常、501 模块尚未实现。
 - 分页：`?page=&page_size=`，默认 `page=1`、`page_size=20`（上限 100）。
 - 时间：所有时间字段为 UTC ISO8601 字符串。
+- 上传：服务端强校验类型与大小。类型不支持返回 400 `DOCUMENT_TYPE_UNSUPPORTED`；
+  超过 30MB 返回 413 `DOCUMENT_TOO_LARGE`（Nginx 侧 `client_max_body_size` 同步为 30m，
+  并返回同样的 JSON 错误体）。
 
 ## 已实现
 
@@ -39,6 +42,11 @@
 | --- | --- | --- |
 | GET | `/healthz` | 无需认证，返回 `{status, version, database}`；`status=ok` 表示服务与数据库均可用 |
 
+### 运行期安全要求
+
+- `APP_ENV=production` 时必须提供强随机 `JWT_SECRET`（≥32 字节）；使用仓库内的兜底值、
+  文档示例值或空值时，后端**拒绝启动**并给出可执行的修复提示。
+
 ## 占位模块（路径已固定，实现待后续批次）
 
 | 方法 | 路径 | 说明 |
@@ -46,7 +54,7 @@
 | GET | `/api/v1/qa/sessions` | 我的问答会话列表 |
 | POST | `/api/v1/qa/ask` | body `{question, session_id?}`；响应见下 |
 | GET | `/api/v1/chat/sessions` | 我的助手会话列表 |
-| POST | `/api/v1/chat/sessions` | 新建助手会话 |
+| POST | `/api/v1/chat/sessions` | 新建助手会话（body 可选 `title`） |
 | GET | `/api/v1/chat/sessions/{id}/messages` | 助手会话历史消息 |
 | POST | `/api/v1/chat/sessions/{id}/messages` | body `{content, template?}` |
 | GET | `/api/v1/documents` | 我的文档列表 |
@@ -61,6 +69,12 @@
 | PUT | `/api/v1/kb/items/{id}` | 修改条目 / 升级证据等级（仅管理员） |
 | POST | `/api/v1/kb/items/{id}/retire` | 下架条目（仅管理员） |
 | POST | `/api/v1/kb/import` | 批量导入语料表（仅管理员） |
+
+枚举校验：`scope` 与 `type` 非法取值返回 400 `REQUEST_INVALID`，不会进入检索逻辑。
+
+知识库条目跨字段约束：`status=verified` 表示"已核对本校官方资料"，因此 `evidence` 必须为
+E1 或 E2；`evidence=E3` + `status=verified` 的组合返回 400
+（只修改 `status` 而不传 `evidence` 时，需由服务层与库中现值合并后再校验）。
 
 ## 校园问答响应契约（`/api/v1/qa/ask`）
 

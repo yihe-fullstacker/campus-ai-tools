@@ -14,9 +14,12 @@ from fastapi.testclient import TestClient
 from app.api.deps import get_db
 from app.config import get_settings
 from app.main import create_app
+from app.services.auth_service import hash_password
 from app.storage.db import connect, migrate
 
 API = "/api/v1"
+ADMIN_IDENTITY = "admin"
+ADMIN_PASSWORD = "{{PASSWORD_xjflftfo}}"
 
 
 @pytest.fixture()
@@ -70,3 +73,22 @@ def registered_user(client: TestClient) -> dict:
 def auth_headers(registered_user: dict) -> dict[str, str]:
     """已登录学生的请求头。"""
     return {"Authorization": f"Bearer {registered_user['token']}"}
+
+
+@pytest.fixture()
+def admin_headers(client: TestClient, db_conn: sqlite3.Connection) -> dict[str, str]:
+    """管理员账号的请求头（管理员需显式创建，MVP 无自助提权入口）。"""
+    from app.storage.db import utc_now_iso
+
+    now = utc_now_iso()
+    db_conn.execute(
+        "INSERT INTO users (identity, password_hash, role, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (ADMIN_IDENTITY, hash_password(ADMIN_PASSWORD), "admin", now, now),
+    )
+    db_conn.commit()
+    response = client.post(
+        f"{API}/auth/login", json={"identity": ADMIN_IDENTITY, "password": ADMIN_PASSWORD}
+    )
+    assert response.status_code == 200, response.text
+    return {"Authorization": f"Bearer {response.json()['token']}"}

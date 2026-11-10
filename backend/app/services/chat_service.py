@@ -12,6 +12,19 @@ from app.services import ServiceNotImplemented
 TEMPLATES = ("free", "plan", "concept", "hint")
 
 
+def create_chat_session(
+    conn: sqlite3.Connection,
+    user_id: int,
+    title: str | None = None,
+) -> dict:
+    """新建一个助手会话。
+
+    后续批次需实现：写入 sessions 表（mode=chat、tools 恒为空），
+    title 缺省时取首条消息前 N 字。
+    """
+    raise ServiceNotImplemented("学习助手模块将在后续批次实现")
+
+
 def send_chat_message(
     conn: sqlite3.Connection,
     user_id: int,
