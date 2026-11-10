@@ -30,7 +30,10 @@
     </nav>
 
     <div class="right">
-      <span v-if="auth.user" class="who">{{ auth.user.identity }}</span>
+      <template v-if="auth.user">
+        <span class="who">{{ auth.user.identity }}</span>
+        <button class="login" type="button" @click="handleLogout">退出</button>
+      </template>
       <button v-else class="login" type="button" @click="openLogin">登录</button>
       <div class="navcta">
         <button class="btn" type="button" @click="openLogin">
@@ -54,17 +57,23 @@
 
 <script setup>
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
 import { openAuth } from '@/state/ui'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
+const router = useRouter()
 const rootEl = ref(null)
 
 defineExpose({ root: rootEl })
 
 function openLogin() {
   openAuth()
+}
+
+async function handleLogout() {
+  await auth.logout()
+  router.push('/')
 }
 </script>

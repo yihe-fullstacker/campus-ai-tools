@@ -17,7 +17,9 @@ import AtmosphereCanvas from '@/components/AtmosphereCanvas.vue'
 import HaldenNav from '@/components/HaldenNav.vue'
 import LoginModal from '@/components/LoginModal.vue'
 import { createAmbientScene } from '@/halden/scene'
+import { useAuthStore } from '@/stores/auth'
 
+const auth = useAuthStore()
 const atmoRef = ref(null)
 const navRef = ref(null)
 
@@ -28,6 +30,8 @@ onMounted(() => {
     canvas: atmoRef.value?.canvas,
     nav: navRef.value?.root,
   })
+  // 刷新页面后用本地令牌恢复登录态（令牌失效时自动清除）
+  auth.restoreSession()
 })
 
 onBeforeUnmount(() => {

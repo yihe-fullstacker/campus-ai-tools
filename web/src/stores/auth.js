@@ -45,6 +45,23 @@ export const useAuthStore = defineStore('auth', () => {
     return payload
   }
 
+  /**
+   * 刷新页面后恢复登录态：localStorage 里有令牌就换取当前用户信息。
+   *
+   * 令牌失效（401）时清除本地会话，避免界面停留在"已登录"假象。
+   *
+   * @returns {Promise<object|null>} 恢复成功返回用户信息，否则返回 null
+   */
+  async function restoreSession() {
+    if (!token.value) return null
+    try {
+      return await fetchUser()
+    } catch {
+      resetSession()
+      return null
+    }
+  }
+
   async function logout() {
     try {
       await logoutRequest()
@@ -53,5 +70,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { token, user, isAuthenticated, login, register, fetchUser, logout, resetSession }
+  return {
+    token,
+    user,
+    isAuthenticated,
+    login,
+    register,
+    fetchUser,
+    restoreSession,
+    logout,
+    resetSession,
+  }
 })
