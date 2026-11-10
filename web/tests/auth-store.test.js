@@ -102,6 +102,18 @@ describe('auth store', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('网络异常时保留本地会话，不误清令牌', async () => {
+    localStorage.setItem('campus_ai_token', 'token-abc')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+
+    const auth = useAuthStore()
+    await expect(auth.restoreSession()).rejects.toMatchObject({ code: 'NETWORK_ERROR' })
+
+    expect(auth.token).toBe('token-abc')
+    expect(auth.isAuthenticated).toBe(true)
+    expect(localStorage.getItem('campus_ai_token')).toBe('token-abc')
+  })
+
   it('令牌失效时清除本地会话', async () => {
     localStorage.setItem('campus_ai_token', 'token-abc')
     vi.stubGlobal(

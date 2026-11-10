@@ -48,17 +48,22 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * 刷新页面后恢复登录态：localStorage 里有令牌就换取当前用户信息。
    *
-   * 令牌失效（401）时清除本地会话，避免界面停留在"已登录"假象。
+   * 只有令牌确实失效（401）才清除本地会话；网络抖动等临时故障保留令牌，
+   * 避免把仍然有效的登录状态误清掉。
    *
-   * @returns {Promise<object|null>} 恢复成功返回用户信息，否则返回 null
+   * @returns {Promise<object|null>} 恢复成功返回用户信息；令牌失效返回 null
+   * @throws {ApiError} 非 401 的错误（如网络异常、服务端故障）向上抛出，由调用方决定
    */
   async function restoreSession() {
     if (!token.value) return null
     try {
       return await fetchUser()
-    } catch {
-      resetSession()
-      return null
+    } catch (error) {
+      if (error && error.status === 401) {
+        resetSession()
+        return null
+      }
+      throw error
     }
   }
 

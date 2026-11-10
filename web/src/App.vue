@@ -30,8 +30,9 @@ onMounted(() => {
     canvas: atmoRef.value?.canvas,
     nav: navRef.value?.root,
   })
-  // 刷新页面后用本地令牌恢复登录态（令牌失效时自动清除）
-  auth.restoreSession()
+  // 刷新页面后用本地令牌恢复登录态；令牌失效时 store 会自行清除会话，
+  // 网络异常等临时故障保留令牌，等下一次刷新或操作时再试。
+  auth.restoreSession().catch(() => {})
 })
 
 onBeforeUnmount(() => {
