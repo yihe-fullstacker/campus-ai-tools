@@ -1,0 +1,20 @@
+[project]
+name = "campus-ai-tools-backend"
+version = "0.1.0"
+description = "校园综合 AI 平台后端（FastAPI + SQLite）"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+exclude = [".venv", "__pycache__", ".pytest_cache", ".ruff_cache"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# FastAPI 的 Depends()/Query() 在默认值中调用是官方推荐写法
+ignore = ["B008"]
