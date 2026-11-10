@@ -32,12 +32,11 @@ campus-ai-tools/
 │   └── tests/
 ├── web/                          # Vue 3 前端
 │   ├── package.json
-│   └── src/{api,views,components,router,stores,styles}
+│   └── src/{api,views,components,router,stores,styles,utils}
 ├── data/                         # 运行期数据（git 忽略）
 ├── docs/
 │   ├── api.md                    # API 契约
 │   └── schema.md                 # 数据表设计
-└── scripts/                      # 语料导入与验收脚本（后续批次）
 ```
 
 ## 本地开发
@@ -72,14 +71,21 @@ cd web && npm run build         # 前端构建
 
 ## 部署（Docker Compose 单机）
 
+生产模式（`APP_ENV=production`）要求提供强随机 JWT 密钥，否则后端会**拒绝启动**，
+避免用仓库内的兜底密钥对外服务。
+
 ```bash
-cp .env.example .env            # 按需修改 JWT_SECRET 等配置
+cp .env.example .env
+# 生成随机密钥写入 .env（也可手动编辑该文件）
+echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+
 docker compose up --build -d
 curl http://127.0.0.1:8000/healthz   # 后端探针
 # 浏览器访问 http://127.0.0.1:8080/   前端（Nginx 同时反代 /api）
 ```
 
-`data/` 通过 bind mount 挂载，容器重建后数据不丢。
+`data/` 通过 bind mount 挂载，容器重建后数据不丢。Nginx 的上传上限已设为 30MB，
+与后端一致；超限返回统一的 JSON 错误体。
 
 ## 当前进度
 

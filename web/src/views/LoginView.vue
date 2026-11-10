@@ -44,6 +44,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
+import { safeRedirect } from '@/utils/redirect'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -59,8 +60,7 @@ async function handleSubmit() {
   submitting.value = true
   try {
     await auth.login(identity.value, password.value)
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
-    router.push(redirect)
+    router.push(safeRedirect(route.query.redirect, '/'))
   } catch (error) {
     errorMessage.value = error.message || '登录失败，请稍后重试。'
   } finally {
