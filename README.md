@@ -8,6 +8,20 @@
 - 文档解析：pypdf / python-docx / python-pptx
 - LLM：统一 Provider 抽象接口（`provider.chat` / `provider.embed`），用户可自带任意 OpenAI 兼容模型的密钥
 
+## 界面预览
+
+首页 Hero 区：
+
+![首页 Hero](docs/images/home-hero.png)
+
+宣言区：
+
+![宣言区](docs/images/home-statement.png)
+
+分栏区：
+
+![分栏区](docs/images/home-split.webp)
+
 ## 目录结构
 
 ```
@@ -37,7 +51,8 @@ campus-ai-tools/
 ├── data/                         # 运行期数据（git 忽略）
 ├── docs/
 │   ├── api.md                    # API 契约
-│   └── schema.md                 # 数据表设计
+│   ├── schema.md                 # 数据表设计
+│   └── images/                   # README 界面截图
 ```
 
 ## 本地开发
