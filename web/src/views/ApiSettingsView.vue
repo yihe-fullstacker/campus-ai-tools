@@ -82,12 +82,28 @@
           {{ message }}
         </p>
 
+        <div class="test-result" :class="testResultClass" role="status" aria-live="polite">
+          <span v-if="testing" class="test-result__icon test-result__icon--spin">⏳</span>
+          <span v-else-if="testResult?.ok" class="test-result__icon test-result__icon--ok">✓</span>
+          <span v-else-if="testResult" class="test-result__icon test-result__icon--error">!</span>
+          <span v-else class="test-result__icon test-result__icon--idle">●</span>
+          <div class="test-result__body">
+            <p class="test-result__title">{{ testTitle }}</p>
+            <p class="test-result__detail">{{ testDetail }}</p>
+          </div>
+        </div>
+
         <div class="form__actions">
           <button class="btn btn--primary" type="submit" :disabled="busy">
             {{ editingId ? '保存修改' : '保存配置' }}
           </button>
-          <button class="btn" type="button" :disabled="busy || !canTest" @click="handleTest">
-            测试连通性
+          <button
+            class="btn"
+            type="button"
+            :disabled="busy || testing || !canTest"
+            @click="handleTest"
+          >
+            {{ testing ? '正在测试…' : '测试连接' }}
           </button>
           <button v-if="editingId" class="btn" type="button" @click="resetForm">取消编辑</button>
         </div>
@@ -104,19 +120,38 @@
             </p>
             <p class="card__meta">{{ item.base_url }} · {{ item.model }}</p>
             <p class="card__key">密钥：{{ item.api_key_hint }}</p>
+            <p v-if="item.last_verified_at" class="card__ok">
+              上次验证成功：{{ formatTime(item.last_verified_at) }}
+            </p>
             <p v-if="item.last_error" class="card__error">上次测试失败：{{ item.last_error }}</p>
           </div>
           <div class="card__actions">
             <button
+              class="btn btn--sm"
+              type="button"
+              :disabled="busy || testing || testingId === item.id"
+              @click="handleTestSaved(item)"
+            >
+              {{ testingId === item.id ? '测试中…' : '测试连接' }}
+            </button>
+            <button
               v-if="!item.is_active"
               class="btn btn--sm"
               type="button"
+              :disabled="busy"
               @click="handleActivate(item.id)"
             >
               设为生效
             </button>
-            <button class="btn btn--sm" type="button" @click="startEdit(item)">编辑</button>
-            <button class="btn btn--sm btn--danger" type="button" @click="handleDelete(item.id)">
+            <button class="btn btn--sm" type="button" :disabled="busy" @click="startEdit(item)">
+              编辑
+            </button>
+            <button
+              class="btn btn--sm btn--danger"
+              type="button"
+              :disabled="busy"
+              @click="handleDelete(item.id)"
+            >
               删除
             </button>
           </div>
@@ -143,8 +178,11 @@ const presets = ref([])
 const configs = ref([])
 const editingId = ref(null)
 const busy = ref(false)
+const testing = ref(false)
+const testingId = ref(null)
 const message = ref('')
 const messageKind = ref('info')
+const testResult = ref(null)
 
 const form = reactive({
   provider: 'deepseek',
@@ -156,6 +194,29 @@ const form = reactive({
 
 const currentPreset = computed(() => presets.value.find((p) => p.provider === form.provider))
 const canTest = computed(() => Boolean(form.api_key) || Boolean(editingId.value))
+
+const testResultClass = computed(() => {
+  if (testing.value) return 'test-result--busy'
+  if (!testResult.value) return 'test-result--idle'
+  return testResult.value.ok ? 'test-result--ok' : 'test-result--error'
+})
+
+const testTitle = computed(() => {
+  if (testing.value) return '正在测试连接…'
+  if (!testResult.value) return '尚未测试'
+  return testResult.value.ok ? '连接成功' : '连接失败'
+})
+
+const testDetail = computed(() => {
+  if (testing.value) return '会用一次极短的对话验证接口地址、密钥与模型是否可用。'
+  if (!testResult.value) {
+    return '填写密钥后点击「测试连接」，成功后会在这里显示模型回复。'
+  }
+  const result = testResult.value
+  if (!result.ok) return result.error
+  const latency = result.latency_ms != null ? ` · 耗时 ${result.latency_ms} ms` : ''
+  return `${result.model} 正常响应「${result.reply}」${latency}`
+})
 
 function applyPreset() {
   const preset = currentPreset.value
@@ -173,6 +234,7 @@ function say(text, kind = 'info') {
 function resetForm() {
   editingId.value = null
   form.api_key = ''
+  testResult.value = null
   applyPreset()
   message.value = ''
 }
@@ -184,7 +246,14 @@ function startEdit(item) {
   form.model = item.model
   form.embedding_model = item.embedding_model || ''
   form.api_key = ''
+  testResult.value = null
   message.value = ''
+}
+
+function formatTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
 async function load() {
@@ -228,30 +297,56 @@ async function handleSubmit() {
   }
 }
 
+function validateDraft() {
+  if (!form.model.trim()) {
+    testResult.value = { ok: false, error: '请先填写模型名称。' }
+    return false
+  }
+  if (!form.base_url.trim()) {
+    testResult.value = { ok: false, error: '请先填写接口地址 base_url。' }
+    return false
+  }
+  return true
+}
+
 async function handleTest() {
-  busy.value = true
-  say('正在用一次极短对话测试…', 'info')
+  if (!validateDraft()) return
+  testing.value = true
+  testResult.value = null
+  message.value = ''
   try {
     const payload = {}
     if (form.api_key.trim()) {
       payload.provider = form.provider
       payload.base_url = form.base_url.trim()
       payload.model = form.model.trim()
+      payload.embedding_model = form.embedding_model.trim() || undefined
       payload.api_key = form.api_key.trim()
     } else {
       payload.config_id = editingId.value
     }
-    const result = await testConfig(payload)
-    if (result.ok) {
-      say(`连接成功，模型回复：${result.reply}`, 'ok')
-      await load()
-    } else {
-      say(result.error, 'error')
-    }
+    testResult.value = await testConfig(payload)
+    if (testResult.value.ok) await load()
   } catch (error) {
-    say(error.message, 'error')
+    testResult.value = { ok: false, error: error.message }
   } finally {
-    busy.value = false
+    testing.value = false
+  }
+}
+
+async function handleTestSaved(item) {
+  testing.value = true
+  testingId.value = item.id
+  testResult.value = null
+  message.value = ''
+  try {
+    testResult.value = await testConfig({ config_id: item.id })
+    await load()
+  } catch (error) {
+    testResult.value = { ok: false, error: error.message }
+  } finally {
+    testing.value = false
+    testingId.value = null
   }
 }
 
@@ -350,6 +445,7 @@ onMounted(async () => {
   border: 1px solid var(--line, #d1d5db);
   border-radius: 10px;
   font-size: 14px;
+  font-family: inherit;
   background: #fff;
   color: #111827;
 }
@@ -375,6 +471,7 @@ onMounted(async () => {
   border-radius: 999px;
   border: 1px solid var(--line, #d1d5db);
   background: #fff;
+  color: var(--ink, #0b1d3a);
   font-size: 14px;
   cursor: pointer;
 }
@@ -411,6 +508,69 @@ onMounted(async () => {
   background: #fef2f2;
   color: #991b1b;
 }
+.test-result {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line, #e5e7eb);
+  background: #f9fafb;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.test-result__icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  background: #e5e7eb;
+  color: #6b7280;
+}
+.test-result__icon--ok {
+  background: #d1fae5;
+  color: #047857;
+}
+.test-result__icon--error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.test-result__icon--spin {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+.test-result--ok {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+.test-result--error {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+.test-result--busy {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+.test-result__title {
+  margin: 0 0 2px;
+  font-weight: 600;
+}
+.test-result--ok .test-result__title {
+  color: #065f46;
+}
+.test-result--error .test-result__title {
+  color: #991b1b;
+}
+.test-result__detail {
+  margin: 0;
+  color: var(--ink-2, #4b5563);
+  word-break: break-word;
+}
 .list__empty {
   color: var(--ink-3, #6b7280);
   font-size: 14px;
@@ -446,6 +606,11 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--ink-3, #6b7280);
   word-break: break-all;
+}
+.card__ok {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #047857;
 }
 .card__error {
   margin: 6px 0 0;

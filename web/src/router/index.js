@@ -2,9 +2,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import { getToken } from '@/api/client'
 import { openAuth } from '@/state/ui'
-import LandingView from '@/views/LandingView.vue'
-import ModuleView from '@/views/ModuleView.vue'
 import ApiSettingsView from '@/views/ApiSettingsView.vue'
+import ChatView from '@/views/ChatView.vue'
+import DocumentsView from '@/views/DocumentsView.vue'
+import KbView from '@/views/KbView.vue'
+import LandingView from '@/views/LandingView.vue'
+import QaView from '@/views/QaView.vue'
+import SearchView from '@/views/SearchView.vue'
 
 /**
  * 路由约定
@@ -14,21 +18,11 @@ import ApiSettingsView from '@/views/ApiSettingsView.vue'
  */
 const routes = [
   { path: '/', name: 'landing', component: LandingView },
-  { path: '/qa', name: 'qa', component: ModuleView, meta: { requiresAuth: true, module: 'qa' } },
-  { path: '/chat', name: 'chat', component: ModuleView, meta: { requiresAuth: true, module: 'chat' } },
-  {
-    path: '/documents',
-    name: 'documents',
-    component: ModuleView,
-    meta: { requiresAuth: true, module: 'documents' },
-  },
-  {
-    path: '/search',
-    name: 'search',
-    component: ModuleView,
-    meta: { requiresAuth: true, module: 'search' },
-  },
-  { path: '/kb', name: 'kb', component: ModuleView, meta: { requiresAuth: true, module: 'kb' } },
+  { path: '/qa', name: 'qa', component: QaView, meta: { requiresAuth: true } },
+  { path: '/chat', name: 'chat', component: ChatView, meta: { requiresAuth: true } },
+  { path: '/documents', name: 'documents', component: DocumentsView, meta: { requiresAuth: true } },
+  { path: '/search', name: 'search', component: SearchView, meta: { requiresAuth: true } },
+  { path: '/kb', name: 'kb', component: KbView, meta: { requiresAuth: true } },
   {
     path: '/settings/api',
     name: 'api-settings',

@@ -77,19 +77,26 @@ describe('模型接入页', () => {
     expect(payload.model).toBe('deepseek-chat')
   })
 
-  it('测试连通性时展示成功回复', async () => {
-    api.testConfig.mockResolvedValue({ ok: true, reply: '正常', model: 'deepseek-chat' })
+  it('测试连接时展示成功回复', async () => {
+    api.testConfig.mockResolvedValue({
+      ok: true,
+      reply: '正常',
+      model: 'deepseek-chat',
+      latency_ms: 320,
+    })
     const wrapper = mount(ApiSettingsView)
     await flushPromises()
 
     const keyInput = wrapper.findAll('input').find((i) => i.attributes('type') === 'password')
     await keyInput.setValue('sk-pasted-key-123456')
     const buttons = wrapper.findAll('button')
-    const testButton = buttons.find((b) => b.text().includes('测试连通性'))
+    const testButton = buttons.find((b) => b.text().includes('测试连接'))
     await testButton.trigger('click')
     await flushPromises()
 
     expect(wrapper.text()).toContain('连接成功')
+    expect(wrapper.text()).toContain('正常响应')
+    expect(wrapper.text()).toContain('320 ms')
   })
 
   it('测试失败时展示后端返回的错误原文', async () => {
@@ -99,10 +106,11 @@ describe('模型接入页', () => {
 
     const keyInput = wrapper.findAll('input').find((i) => i.attributes('type') === 'password')
     await keyInput.setValue('sk-pasted-key-123456')
-    const testButton = wrapper.findAll('button').find((b) => b.text().includes('测试连通性'))
+    const testButton = wrapper.findAll('button').find((b) => b.text().includes('测试连接'))
     await testButton.trigger('click')
     await flushPromises()
 
+    expect(wrapper.text()).toContain('连接失败')
     expect(wrapper.text()).toContain('API 密钥无效或已过期')
   })
 

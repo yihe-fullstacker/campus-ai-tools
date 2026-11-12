@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import sqlite3
+import time
 
 from app.errors import ApiError
 from app.services.llm import base as llm_base
@@ -365,10 +366,12 @@ def test_config(
         target_id = config_id
 
     try:
+        started = time.monotonic()
         result = provider.chat(
             [llm_base.ChatMessage(role="user", content="请只回复两个字：正常")],
             {"temperature": 0, "max_tokens": 16},
         )
+        latency_ms = int((time.monotonic() - started) * 1000)
     except llm_base.LLMError as exc:
         message = str(exc)
         if target_id is not None:
@@ -387,4 +390,9 @@ def test_config(
             (utc_now_iso(), utc_now_iso(), target_id),
         )
         conn.commit()
-    return {"ok": True, "reply": result.text[:100], "model": result.model}
+    return {
+        "ok": True,
+        "reply": result.text[:100],
+        "model": result.model,
+        "latency_ms": latency_ms,
+    }

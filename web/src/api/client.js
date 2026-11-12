@@ -76,3 +76,63 @@ export function get(path, options = {}) {
 export function post(path, body, options = {}) {
   return request(path, { ...options, method: 'POST', body })
 }
+
+/**
+ * multipart 上传：不设置 Content-Type，交给浏览器生成带 boundary 的请求头。
+ */
+export async function upload(path, formData) {
+  const headers = { Accept: 'application/json' }
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  let response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', '网络连接失败，请检查网络后重试。')
+  }
+
+  const data = await parseBody(response)
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      (data && data.code) || 'HTTP_ERROR',
+      (data && data.message) || `请求失败（HTTP ${response.status}）`,
+    )
+  }
+  return data
+}
+
+/** 下载需要鉴权的文本响应（如摘要 Markdown）。 */
+export async function download(path, filename) {
+  const token = getToken()
+  let response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', '网络连接失败，请检查网络后重试。')
+  }
+  if (!response.ok) {
+    const data = await parseBody(response)
+    throw new ApiError(
+      response.status,
+      (data && data.code) || 'HTTP_ERROR',
+      (data && data.message) || `下载失败（HTTP ${response.status}）`,
+    )
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+}

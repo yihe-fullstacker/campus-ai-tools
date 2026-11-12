@@ -53,10 +53,10 @@ def test_upload_rejects_mismatched_extension(
     assert response.json()["code"] == "DOCUMENT_TYPE_UNSUPPORTED"
 
 
-def test_upload_accepts_supported_type_then_returns_201(
+def test_upload_empty_pdf_is_marked_failed(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
-    # Use a properly formatted minimal PDF that pypdf can parse
+    # 一个没有文本层的 PDF 无法解析出内容，应如实标记 failed（扫描版/空文档）
     pdf_content = b"""%PDF-1.4
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>
@@ -66,9 +66,9 @@ endobj
 endobj
 xref
 0 3
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
 end-xref
 trailer
 << /Size 3 /Root 1 0 R >>
@@ -84,7 +84,8 @@ startxref
     body = response.json()
     assert "document_id" in body
     assert body["filename"] == "report.pdf"
-    assert body["status"] == "ready"
+    assert body["status"] == "failed"
+    assert body["status_message"]
 
 
 def test_upload_requires_auth(client: TestClient) -> None:
