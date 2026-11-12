@@ -28,6 +28,19 @@ def list_sessions(
         raise module_not_implemented(exc) from exc
 
 
+@router.get("/messages/{session_id}", summary="问答会话历史消息")
+def list_messages(
+    session_id: int,
+    conn: sqlite3.Connection = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> list[dict]:
+    """读取指定问答会话的历史消息（可回放）。"""
+    try:
+        return qa_service.get_qa_messages(conn, user["id"], session_id)
+    except ServiceNotImplemented as exc:
+        raise module_not_implemented(exc) from exc
+
+
 @router.post("/ask", summary="提问")
 def ask(
     payload: QaAskRequest,

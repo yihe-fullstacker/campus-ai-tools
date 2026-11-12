@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api import auth, chat, documents, health, kb, qa, search
+from app.api import auth, chat, documents, health, kb, llm_configs, qa, search
 from app.config import get_settings
 from app.errors import ApiError
 from app.services import doc_service
@@ -154,6 +154,7 @@ def create_app() -> FastAPI:
     app.include_router(documents.router, prefix=prefix)
     app.include_router(search.router, prefix=prefix)
     app.include_router(kb.router, prefix=prefix)
+    app.include_router(llm_configs.router, prefix=prefix)
 
     _register_exception_handlers(app)
     return app

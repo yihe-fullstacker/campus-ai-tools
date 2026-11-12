@@ -27,6 +27,7 @@
       <RouterLink to="/chat">学习助手</RouterLink>
       <RouterLink to="/documents">资料解析</RouterLink>
       <RouterLink to="/search">资源搜索</RouterLink>
+      <RouterLink to="/settings/api">模型接入</RouterLink>
     </nav>
 
     <div class="right">
@@ -35,7 +36,7 @@
         <button class="login" type="button" @click="handleLogout">退出</button>
       </template>
       <button v-else class="login" type="button" @click="openLogin">登录</button>
-      <div class="navcta">
+      <div v-if="!auth.user" class="navcta">
         <button class="btn" type="button" @click="openLogin">
           <span class="lbl">免费试用</span>
           <span class="dot">

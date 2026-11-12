@@ -4,6 +4,7 @@ import { getToken } from '@/api/client'
 import { openAuth } from '@/state/ui'
 import LandingView from '@/views/LandingView.vue'
 import ModuleView from '@/views/ModuleView.vue'
+import ApiSettingsView from '@/views/ApiSettingsView.vue'
 
 /**
  * 路由约定
@@ -28,6 +29,12 @@ const routes = [
     meta: { requiresAuth: true, module: 'search' },
   },
   { path: '/kb', name: 'kb', component: ModuleView, meta: { requiresAuth: true, module: 'kb' } },
+  {
+    path: '/settings/api',
+    name: 'api-settings',
+    component: ApiSettingsView,
+    meta: { requiresAuth: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 

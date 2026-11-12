@@ -184,7 +184,7 @@ def test_search_accepts_valid_enum_values(
     response = client.get(
         f"{API}/search", params={"q": "缓考", "scope": "kb", "type": "faq"}, headers=auth_headers
     )
-    assert response.status_code == 501
+    assert response.status_code == 200
 
 
 def test_kb_item_rejects_verified_with_e3_evidence(
@@ -233,7 +233,10 @@ def test_kb_item_accepts_verified_with_official_evidence(
         },
         headers=admin_headers,
     )
-    assert response.status_code == 501
+    assert response.status_code == 201
+    body = response.json()
+    assert body["evidence"] == "E2"
+    assert body["status"] == "verified"
 
 
 def test_kb_item_default_is_candidate_and_e3(
@@ -244,4 +247,7 @@ def test_kb_item_default_is_candidate_and_e3(
         json={"question": "缓考怎么申请", "category": "S3"},
         headers=admin_headers,
     )
-    assert response.status_code == 501
+    assert response.status_code == 201
+    body = response.json()
+    assert body["status"] == "candidate"
+    assert body["evidence"] == "E3"
