@@ -1,6 +1,6 @@
 """审查修复项的回归测试。
 
-覆盖：上传大小/类型校验、新建助手会话调用正确的 service、生产环境密钥 fail-fast、
+覆盖：上传大小/类型校验、新建助手会话调用正确的 service、生产环境密钥 fail-fast
 搜索枚举校验、知识库 evidence 与 status 的跨字段约束。
 """
 
@@ -53,22 +53,44 @@ def test_upload_rejects_mismatched_extension(
     assert response.json()["code"] == "DOCUMENT_TYPE_UNSUPPORTED"
 
 
-def test_upload_accepts_supported_type_then_returns_not_implemented(
+def test_upload_accepts_supported_type_then_returns_201(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
+    # Use a properly formatted minimal PDF that pypdf can parse
+    pdf_content = b"""%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [] /Count 0 >>
+endobj
+xref
+0 3
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+end-xref
+trailer
+<< /Size 3 /Root 1 0 R >>
+startxref
+55
+%%EOF"""
     response = client.post(
         f"{API}/documents",
-        files={"file": ("report.pdf", b"%PDF-1.4 demo", "application/pdf")},
+        files={"file": ("report.pdf", pdf_content, "application/pdf")},
         headers=auth_headers,
     )
-    assert response.status_code == 501
-    assert response.json()["code"] == "MODULE_NOT_IMPLEMENTED"
+    assert response.status_code == 201
+    body = response.json()
+    assert "document_id" in body
+    assert body["filename"] == "report.pdf"
+    assert body["status"] == "ready"
 
 
 def test_upload_requires_auth(client: TestClient) -> None:
     response = client.post(
         f"{API}/documents",
-        files={"file": ("report.pdf", b"%PDF-1.4 demo", "application/pdf")},
+        files={"file": ("report.pdf", b"%PDF-1.4", "application/pdf")},
     )
     assert response.status_code == 401
 
@@ -135,7 +157,9 @@ def test_production_starts_with_strong_secret(monkeypatch, tmp_path) -> None:
         get_settings.cache_clear()
 
 
-def test_search_rejects_invalid_scope(client: TestClient, auth_headers: dict[str, str]) -> None:
+def test_search_rejects_invalid_scope(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     response = client.get(
         f"{API}/search", params={"q": "缓考", "scope": "bogus"}, headers=auth_headers
     )
@@ -144,7 +168,9 @@ def test_search_rejects_invalid_scope(client: TestClient, auth_headers: dict[str
     assert "scope" in response.json()["message"]
 
 
-def test_search_rejects_invalid_type(client: TestClient, auth_headers: dict[str, str]) -> None:
+def test_search_rejects_invalid_type(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     response = client.get(
         f"{API}/search", params={"q": "缓考", "type": "bogus"}, headers=auth_headers
     )
@@ -152,7 +178,9 @@ def test_search_rejects_invalid_type(client: TestClient, auth_headers: dict[str,
     assert "type" in response.json()["message"]
 
 
-def test_search_accepts_valid_enum_values(client: TestClient, auth_headers: dict[str, str]) -> None:
+def test_search_accepts_valid_enum_values(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     response = client.get(
         f"{API}/search", params={"q": "缓考", "scope": "kb", "type": "faq"}, headers=auth_headers
     )

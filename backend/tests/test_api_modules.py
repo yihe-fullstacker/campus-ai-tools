@@ -41,11 +41,11 @@ def test_chat_sessions_returns_not_implemented(
     assert response.status_code == 501
 
 
-def test_documents_list_returns_not_implemented(
+def test_documents_list_returns_ok(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
     response = client.get(f"{API}/documents", headers=auth_headers)
-    assert response.status_code == 501
+    assert response.status_code == 200
 
 
 def test_search_requires_auth(client: TestClient) -> None:
